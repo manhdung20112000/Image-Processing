@@ -1,7 +1,7 @@
 # Image-Processing 2020
 
 #### This repository contains:
-- **Our project: Solving classic Pokemon 
+- **Our project**: Solving classic Pokemon 
 - My personal research on topic "Template matching with distortion"
 
 --------------------------------------------
