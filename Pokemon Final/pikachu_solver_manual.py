@@ -390,7 +390,7 @@ if __name__ == "__main__":
     index = 1
 
     for row in range(len(pika_board)):
-        for col in range(len(pika_board)):
+        for col in range(len(pika_board[0])):
             #check if there is a pokemon at the position
             if not pokemon_checks[row][col]:
                 continue
@@ -420,6 +420,12 @@ if __name__ == "__main__":
     steps = []
     states = []
     pika_state = origin_board_padded.copy()
+    pokemons_left = 0
+    for i in range(len(pika_state)):
+        for j in range(len(pika_state[0])):
+            if pika_state[i][j] > 0:
+                pokemons_left += 1
+        
     while(True):
         if keyboard.is_pressed('space') \
         or keyboard.is_pressed('left') \
@@ -484,9 +490,77 @@ if __name__ == "__main__":
         
             states.append(pika_state)
             step = bfs4(pika_state)
-            if step == -1:
-                break
+            while step == -1:
+                if pokemons_left > 0:
+                    img = screenshot()
+                    pokemon_imgs = []
+                    padded_pokemon_imgs = []
+
+                    for index in range(height):
+                        tmp = []
+                        for jndex in range(width):
+                            pokemon_img = img[pokemons[index][jndex][0][1]:pokemons[index][jndex][1][1], 
+                                              pokemons[index][jndex][0][0]:pokemons[index][jndex][1][0]]
+                            
+                            padded_pokemon_img = img[pokemons[index][jndex][0][1]-gap_width:pokemons[index][jndex][1][1]+gap_width, 
+                                                     pokemons[index][jndex][0][0]-gap_width:pokemons[index][jndex][1][0]+gap_width]
+                            
+                            pokemon_imgs.append(pokemon_img)
+                            tmp.append(padded_pokemon_img)
+                            
+                        padded_pokemon_imgs.append(tmp)
+                        
+                    # Detecting whether a square contains a pokemon
+                    pokemon_checks = []
+                    for index in range(height):
+                        tmp = []
+                        for jndex in range(width):
+                            tmp.append(pika_state[index + 1][jndex + 1] > 0)
+                            
+                        pokemon_checks.append(tmp)
+            
+                    # Initialize a list with size of Pikachu Board
+                    pika_board = np.zeros((len(pokemons), len(pokemons[0])), dtype = 'int32')
+                    
+                    # Build a logical Pikachu Board from an image of Pokemon Game
+                    index = 1
+
+                    for row in range(len(pika_board)):
+                        for col in range(len(pika_board[0])):
+                            #check if there is a pokemon at the position
+                            if not pokemon_checks[row][col]:
+                                continue
+                            #check if the position has been indexed or not
+                            if (pika_board[row, col] != 0):
+                                continue
+                            #index the position
+                            pika_board[row, col] = index
+                            
+                            #find similar pokemon and index
+                            
+                            similar_locs = find_similar_pixPos(row, col)
+                            idx_similar_pokemon(similar_locs, index, pika_board)
+                            
+                            #update index
+                            index += 1
+                            
+                    # We need to save the origin board for further processing
+                    origin_board = pika_board
+                    
+                    pika_board = np.pad(pika_board, 1, pad_with, padder=0)
+                    
+                    # Create a copy of padded origin board
+                    origin_board_padded = pika_board.copy()
+                    
+                    # Time to solve Pikachu
+                    pika_state = origin_board_padded.copy()
+                    states.append(pika_state)
+                    step = bfs4(pika_state)
+                
+                else:
+                    break
             steps.append(step)
+            pokemons_left = pokemons_left - 2
             first_point = step[0]
             second_point = step[-1]
             
