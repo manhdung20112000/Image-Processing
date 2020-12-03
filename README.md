@@ -1,10 +1,10 @@
-# [solve-classic-pokemon](#project)
+# [solve-classic-pikachu](#project)
 
 ## [Introduction](#introduction)
-This is our project about Sovling the classic Pokemon
+This is our project about Solving the classic Pikachu
 ## [Requirement](#requirement)
 
-##### Install Classic Pokemon game
+##### Install Classic Pikachu game
 Run the `Pokemon_setup.exe` store in [`\Pokemon Final`](https://github.com/manhdung20112000/Image-Processing/tree/main/Pokemon%20Final)
 - Click 'Yes' to allow app to makes change to your devide
 - Click 'Tiến' 2 times to continue
@@ -23,9 +23,9 @@ pip install numpy scipy matplotlib jupyter cv2 keyboard pyautogui
 ## [Usage](#usage)
 All the final codes are stored in [`\Pokemon Final`](https://github.com/manhdung20112000/Image-Processing/tree/main/Pokemon%20Final)
 
-The [`\Pokemon Final\Solving Pokemons Final.jpynb`](https://github.com/manhdung20112000/Image-Processing/blob/main/Pokemon%20Final/Solving%20Pokemons%20Final.ipynb) notebook is our final work. 
-In short term, it contains:
-- Technique to detect the board in Pokemon game
+The [`\Pokemon Final\Solving Pokemons Final.ipynb`](https://github.com/manhdung20112000/Image-Processing/blob/main/Pokemon%20Final/Solving%20Pokemons%20Final.ipynb) notebook is our final work. 
+In short, it contains:
+- Technique to detect the board in Pikachu game
 - Technique to detect the similar Pokemon 
 - Search the way to similar Pokemon and return which one is legal
 - Render the solution
@@ -33,8 +33,9 @@ In short term, it contains:
 For demonstration, 
 - Clone this repository 
 - Install all the [requirements](#requirement)
-- Open Pokemon game 
-- Play the game (*`Control + F` to full-screen*)
+- Open Pikachu game 
+- Play the game 
+- `Control + F` to full-screen
 - Access to [`\Pokemon Final`](https://github.com/manhdung20112000/Image-Processing/tree/main/Pokemon%20Final) 
 ```bash
 cd 'your_folder\Image-Processing\Pokemon Final\'
@@ -43,7 +44,7 @@ cd 'your_folder\Image-Processing\Pokemon Final\'
 ```bash
 python pikachu_solver_final.py
 ```
-- Back to the game interface, and press:
+- Back to the game interface, and hold:
     - `Space` if it's **Static** phase
     - `Left` if it's force to the **Left** phase
     - `Up` if it's fall **Up** phase
