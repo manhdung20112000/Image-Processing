@@ -45,25 +45,20 @@ def detectingPokemon(img, template, meth="cv2.TM_CCOEFF_NORMED"):
     
     return res
     
+def get_pokemon_similarity(template, index, jndex):
+    return np.max(detectingPokemon(padded_pokemon_imgs[index][jndex], template)) / 2
+    
+def is_same_pokemon(template, index, jndex):
+    threshold = 0.72
+    return get_pokemon_similarity(template, index, jndex) >= threshold
+    
 def display(i_origin, j_origin, verbo = False):
     template = pokemon_imgs[i_origin * width + j_origin]
-    h, w, c = template.shape
     
     locs = []
-    res = []
     for index in range(height):
         for jndex in range(width):
-            if pokemon_checks[index][jndex]:
-                res.append(np.max(detectingPokemon(padded_pokemon_imgs[index][jndex], template)))
-            else:
-                res.append(0)
-    
-    threshold = 0.7
-    #selecting points which have value equal or bigger than max_val
-    res = (res >= threshold*np.max(res))
-    for index in range(height):
-        for jndex in range(width):
-            if res[index * width + jndex]:
+            if pokemon_checks[index][jndex] and is_same_pokemon(template, index, jndex):
                 locs.append((index, jndex))
                 
     #Every single Pokemon can be indentify if we have top_left point and bottom_left point.
@@ -91,6 +86,7 @@ def display(i_origin, j_origin, verbo = False):
 def idx_similar_pokemon(positions, index, pika_board):
     for position in positions:
         pika_board[position[0], position[1]] = index
+        pokemon_checks[position[0]][position[1]] = False
         
 #Find pixel position of similar pokemon
 def find_similar_pixPos(row_original, col_original):
@@ -170,10 +166,10 @@ def bfs4_cell(board, n, m, sx, sy):
                     de.appendleft((next_x, next_y, i))
     return -1
     
-def screenshot(move_count):
+def screenshot(step):
     img = pyautogui.screenshot()
-    img.save(f'img/pikachu_board_play_{move_count}.png')
-    return cv2.imread(f'img/pikachu_board_play_{move_count}.png')
+    img.save(f'img/pikachu_board_play_{step}.png')
+    return cv2.imread(f'img/pikachu_board_play_{step}.png')
     
 def get_pokemon_positions(img):
     width = img.shape[0]
@@ -342,100 +338,142 @@ def get_pokemon_positions(img):
     
     return pokemons, height, width, gap_width
     
+def get_pokemon_imgs(img, pokemons, height, width, gap_width):
+    # We need to create a cropped images list for all pokemons
+    pokemon_imgs = []
+    padded_pokemon_imgs = []
+
+    for index in range(height):
+        tmp = []
+        for jndex in range(width):
+            pokemon_img = img[pokemons[index][jndex][0][1]:pokemons[index][jndex][1][1], 
+                              pokemons[index][jndex][0][0]:pokemons[index][jndex][1][0]]
+            
+            padded_pokemon_img = img[pokemons[index][jndex][0][1]-gap_width:pokemons[index][jndex][1][1]+gap_width, 
+                                     pokemons[index][jndex][0][0]-gap_width:pokemons[index][jndex][1][0]+gap_width]
+            
+            pokemon_imgs.append(pokemon_img)
+            tmp.append(padded_pokemon_img)
+            
+        padded_pokemon_imgs.append(tmp)
+        
+    return pokemon_imgs, padded_pokemon_imgs
 
 if __name__ == "__main__":
     while(True):
         if keyboard.is_pressed('space'):
+            img = screenshot(0)
             time.sleep(0.25)
             break
-
-    move_count = 0
-    while (True):
-        if keyboard.is_pressed('space'):
-            break
-        move_count = move_count + 1
     
-        img = screenshot(move_count)
-        
-        if move_count == 1:
-            pokemons, height, width, gap_width = get_pokemon_positions(img)
+    pokemons, height, width, gap_width = get_pokemon_positions(img)
+    pokemon_imgs, padded_pokemon_imgs = get_pokemon_imgs(img, pokemons, height, width, gap_width)
+    
+    # Detecting whether a square contains a pokemon
+    pokemon_checks = []
+    for index in range(height):
+        tmp = []
+        for jndex in range(width):
+            tmp.append(is_pokemon(pokemon_imgs[index * width + jndex]))
             
-        # We need to create a cropped images list for all pokemons
-        pokemon_imgs = []
-        padded_pokemon_imgs = []
+        pokemon_checks.append(tmp)
+        
+    # Initialize a list with size of Pikachu Board
+    pika_board = np.zeros((len(pokemons), len(pokemons[0])), dtype = 'int32')
+    
+    # Build a logical Pikachu Board from an image of Pokemon Game
+    index = 1
+    pokemon_tmps = []
+    pokemon_count = []
 
-        for index in range(height):
-            tmp = []
-            for jndex in range(width):
-                pokemon_img = img[pokemons[index][jndex][0][1]:pokemons[index][jndex][1][1], 
-                                  pokemons[index][jndex][0][0]:pokemons[index][jndex][1][0]]
-                
-                padded_pokemon_img = img[pokemons[index][jndex][0][1]-gap_width:pokemons[index][jndex][1][1]+gap_width, 
-                                         pokemons[index][jndex][0][0]-gap_width:pokemons[index][jndex][1][0]+gap_width]
-                
-                pokemon_imgs.append(pokemon_img)
-                tmp.append(padded_pokemon_img)
-                
-            padded_pokemon_imgs.append(tmp)
-        
-        # Detecting whether a square contains a pokemon
-        pokemon_checks = []
-        for index in range(height):
-            tmp = []
-            for jndex in range(width):
-                tmp.append(is_pokemon(pokemon_imgs[index * width + jndex]))
-                
-            pokemon_checks.append(tmp)
+    for row in range(len(pika_board)):
+        for col in range(len(pika_board[0])):
+            #check if there is a pokemon at the position
+            if not pokemon_checks[row][col]:
+                continue
+            #check if the position has been indexed or not
+            if (pika_board[row, col] != 0):
+                continue
+            #index the position
+            pika_board[row, col] = index
+            pokemon_tmps.append(pokemon_imgs[row * width + col].copy())
             
-        # Initialize a list with size of Pikachu Board
-        pika_board = np.zeros((len(pokemons), len(pokemons[0])), dtype = 'int32')
-        
-        # Build a logical Pikachu Board from an image of Pokemon Game
-        index = 1
-
-        for row in range(len(pika_board)):
-            for col in range(len(pika_board)):
-                #check if there is a pokemon at the position
-                if not pokemon_checks[row][col]:
-                    continue
-                #check if the position has been indexed or not
-                if (pika_board[row, col] != 0):
-                    continue
-                #index the position
-                pika_board[row, col] = index
-                
-                #find similar pokemon and index
-                
-                similar_locs = find_similar_pixPos(row, col)
-                idx_similar_pokemon(similar_locs, index, pika_board)
-                
-                #update index
-                index += 1
-                
-        # We need to save the origin board for further processing
-        origin_board = pika_board
-        
-        pika_board = np.pad(pika_board, 1, pad_with, padder=0)
-        
-        # Create a copy of padded origin board
-        origin_board_padded = pika_board.copy()
-        
-        # Time to solve Pikachu
-        steps = []
-        states = []
-        pika_state = origin_board_padded.copy()
-                
-        step = bfs4(pika_state)
-        if step == -1:
-            break
+            #find similar pokemon and index
             
-        first_point = step[0]
-        second_point = step[-1]
-        first_pokemon = pokemons[first_point[0] - 1][first_point[1] - 1]
-        second_pokemon = pokemons[second_point[0] - 1][second_point[1] - 1]
-        first_position = ((first_pokemon[0][0] + first_pokemon[1][0])//2, (first_pokemon[0][1] + first_pokemon[1][1])//2)
-        second_position = ((second_pokemon[0][0] + second_pokemon[1][0])//2, (second_pokemon[0][1] + second_pokemon[1][1])//2)
-        #print(first_position, end= ' ')
-        #print(second_position)
-        pyautogui.click(first_position[0], first_position[1])
-        pyautogui.click(second_position[0], second_position[1])
+            similar_locs = find_similar_pixPos(row, col)
+            idx_similar_pokemon(similar_locs, index, pika_board)
+            pokemon_count.append(len(similar_locs))
+            
+            #update index
+            index += 1
+            
+    # We need to save the origin board for further processing
+    origin_board = pika_board.copy()
+    
+    pika_board = np.pad(pika_board, 1, pad_with, padder=0)
+    
+    # Time to solve Pikachu
+    steps = []
+    states = []
+    pika_state = pika_board.copy()
+    pokemons_left = 0
+    for i in range(len(pika_state)):
+        for j in range(len(pika_state[0])):
+            if pika_state[i][j] > 0:
+                pokemons_left += 1
+        
+    while pokemons_left > 0:
+        if keyboard.is_pressed('space') \
+        or keyboard.is_pressed('esc'):
+            if keyboard.is_pressed('esc'):
+                break
+                
+            img = screenshot(len(steps))
+            pokemon_imgs, padded_pokemon_imgs = get_pokemon_imgs(img, pokemons, height, width, gap_width)
+            
+            # Initialize a list with size of Pikachu Board
+            pika_board = np.zeros((len(pokemons), len(pokemons[0])), dtype = 'int32')
+                        
+            # Rebuild the logical Pikachu Board
+            for index in range(len(pokemon_tmps)):
+                if pokemon_count[index] > 0:
+                    positions = []
+                    for row in range(len(pika_board)):
+                        for col in range(len(pika_board[0])):
+                            if pika_board[row, col] == 0:
+                                positions.append((row, col))
+                                
+                    positions.sort(key=lambda x: get_pokemon_similarity(pokemon_tmps[index], x[0], x[1]), reverse=True)
+                    for position in positions[:pokemon_count[index]]:
+                        pika_board[position[0], position[1]] = index + 1
+                        
+            # We need to save the origin board for further processing
+            origin_board = pika_board.copy()
+            #print(origin_board)
+            #print()
+                    
+            pika_board = np.pad(pika_board, 1, pad_with, padder=0)
+                    
+            # Time to solve Pikachu
+            pika_state = pika_board.copy()
+            states.append(pika_state)
+            step = bfs4(pika_state)
+            steps.append(step)
+            pokemons_left = pokemons_left - 2
+            
+            first_point = step[0]
+            second_point = step[-1]
+            #print(first_point, end= ' ')
+            #print(second_point)
+            index = origin_board[first_point[0] - 1][first_point[1] - 1]
+            pokemon_count[index - 1] -= 2
+            
+            first_pokemon = pokemons[first_point[0] - 1][first_point[1] - 1]
+            second_pokemon = pokemons[second_point[0] - 1][second_point[1] - 1]
+            first_position = ((first_pokemon[0][0] + first_pokemon[1][0])//2, (first_pokemon[0][1] + first_pokemon[1][1])//2)
+            second_position = ((second_pokemon[0][0] + second_pokemon[1][0])//2, (second_pokemon[0][1] + second_pokemon[1][1])//2)
+            #print(first_position, end= ' ')
+            #print(second_position)
+            pyautogui.click(first_position[0], first_position[1])
+            pyautogui.click(second_position[0], second_position[1])
+            time.sleep(0.2)
